@@ -3,7 +3,7 @@ import {
   getAllDeployments,
   getDeploymentById,
   updateDeploymentStatus,
-} from "#api/services/deployment.js";
+} from "#app/services/deployment.js";
 import { DeploymentStatus } from "@shipyard/types";
 import { Router } from "express";
 import z from "zod";

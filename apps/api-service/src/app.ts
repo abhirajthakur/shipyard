@@ -1,4 +1,4 @@
-import deploymentRouter from "#api/routes/deployment.js";
+import deploymentRouter from "#app/routes/deployment.js";
 import express from "express";
 
 const app: express.Express = express();

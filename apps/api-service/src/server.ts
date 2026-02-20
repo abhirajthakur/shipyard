@@ -1,4 +1,4 @@
-import { env } from "#api/config/env.js";
+import { env } from "#app/config/env.js";
 import app from "./app.js";
 
 const port = env.PORT;

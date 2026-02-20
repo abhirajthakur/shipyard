@@ -14,7 +14,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "#api/*": ["src/*"]
+      "#app/*": ["src/*"]
     }
   },
   "include": ["src"],

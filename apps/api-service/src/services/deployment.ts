@@ -1,4 +1,4 @@
-import { deploymentQueue } from "#api/config/redis.js";
+import { deploymentQueue } from "#app/config/redis.js";
 import { db, deployments, eq } from "@shipyard/db";
 
 import {
