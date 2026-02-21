@@ -4,6 +4,7 @@ import {
   getDeploymentById,
   updateDeploymentStatus,
 } from "#app/services/deployment.js";
+import { validateGitHubRepo } from "#app/utils/validateGithub.js";
 import { DeploymentStatus } from "@shipyard/types";
 import { Router } from "express";
 import z from "zod";
@@ -32,6 +33,11 @@ router.post("/", async (req: Request, res: Response) => {
         error: "Validation failed",
         details: z.treeifyError(parsed.error),
       });
+    }
+
+    const { valid, error } = await validateGitHubRepo(parsed.data.repoUrl);
+    if (!valid) {
+      return res.status(400).json({ error });
     }
 
     const result = await createDeployment(parsed.data);
@@ -100,7 +106,6 @@ router.patch("/internal/:id/status", async (req: Request, res: Response) => {
     }
 
     const { status, artifactUrl } = parsed.data;
-
     await updateDeploymentStatus(id, status, artifactUrl);
 
     return res.json({ success: true });

@@ -9,51 +9,10 @@ import {
   type DeploymentResponse,
 } from "@shipyard/types";
 
-async function validateGitHubRepo(repoUrl: string): Promise<boolean> {
-  try {
-    const match = repoUrl.match(
-      /^https:\/\/github\.com\/([^\/]+)\/([^\/]+?)(\.git)?\/?$/,
-    );
-
-    if (!match) {
-      return false;
-    }
-
-    const owner = match[1];
-    const repo = match[2];
-
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
-    );
-
-    // Repo does not exist
-    if (response.status === 404) {
-      return false;
-    }
-
-    // Any other failed response
-    if (!response.ok) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function createDeployment(
   payload: CreateDeploymentRequest,
 ): Promise<CreateDeploymentResponse> {
   try {
-    const isValidRepo = await validateGitHubRepo(payload.repoUrl);
-
-    if (!isValidRepo) {
-      throw new Error("Invalid, non-existent, or private GitHub repository");
-    }
-
-    console.log("HERELLLLL");
-
     const [deployment] = await db
       .insert(deployments)
       .values({
@@ -63,8 +22,6 @@ export async function createDeployment(
         status: DeploymentStatus.QUEUED,
       })
       .returning();
-
-    console.log("Deployment created:", deployment);
 
     if (!deployment) {
       throw new Error("Failed to create deployment");
