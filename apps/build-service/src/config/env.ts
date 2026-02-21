@@ -1,0 +1,16 @@
+import "dotenv/config";
+import { z } from "zod";
+
+const envSchema = z.object({
+  REDIS_URL: z.string().default("redis://localhost:6379"),
+  API_URL: z.string().default("http://localhost:8000"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error("Invalid environment variables", z.treeifyError(parsed.error));
+  throw new Error("Invalid environment variables");
+}
+
+export const env = parsed.data;
