@@ -29,8 +29,6 @@ export async function runDockerBuild(job: BuildJob) {
   await fs.mkdir(workspaceRoot, { recursive: true });
   await fs.chmod(workspaceRoot, 0o777);
 
-  console.log({ projectRoot, workspaceRoot });
-
   const buildScript = `
   set -ex  # print commands as they run + exit on error
   git clone --depth=1 ${job.repoUrl} repo
@@ -104,16 +102,14 @@ export async function runDockerBuild(job: BuildJob) {
         `Build failed with status code: ${res.StatusCode}${res.Error?.Message ? ` | Error: ${res.Error?.Message}` : ""}`,
       );
     }
+
+    return workspaceRoot;
   } catch (err) {
     console.error("Build error:", err);
     throw err;
   } finally {
     clearTimeout(timeout);
   }
-
-  console.log("Build finished successfully. Output folder:", workspaceRoot);
-
-  return workspaceRoot;
 }
 
 export async function streamContainerLogs(containerId: string) {

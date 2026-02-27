@@ -14,15 +14,19 @@
   "license": "ISC",
   "devDependencies": {
     "@shipyard/typescript-config": "workspace:^",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^25.3.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.999.0",
     "@docker/node-sdk": "^0.0.17",
     "@shipyard/types": "workspace:^",
     "bullmq": "^5.69.3",
     "dotenv": "^17.3.1",
+    "mime-types": "^3.0.2",
+    "p-limit": "^7.3.0",
     "zod": "^4.0.0"
   }
 }
