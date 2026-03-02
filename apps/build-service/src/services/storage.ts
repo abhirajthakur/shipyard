@@ -45,12 +45,7 @@ async function uploadFile(
   const relativePath = path.relative(baseFolder, filePath).replace(/\\/g, "/");
 
   const s3Key = `${workspaceId}/${relativePath}`;
-  // const contentType = mime.lookup(filePath) || "application/octet-stream";
-  const contentType = filePath.endsWith(".html")
-    ? "text/html; charset=utf-8"
-    : mime.lookup(filePath) || "application/octet-stream";
-
-  console.log(`${relativePath} -> ${contentType}`);
+  const contentType = mime.lookup(filePath) || "application/octet-stream";
 
   const command = new PutObjectCommand({
     Bucket: bucketName,

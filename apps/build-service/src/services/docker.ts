@@ -58,20 +58,14 @@ export async function runDockerBuild(job: BuildJob) {
     Image: "shipyard-build-runner:1.0",
     Cmd: ["sh", "-c", buildScript],
     WorkingDir: "/workspace",
-    User: "0:0", // run as root
     HostConfig: {
-      Binds: [`${workspaceRoot}:/workspace`],
+      Binds: [`${workspaceRoot}:/workspace:rw`],
 
       NetworkMode: "bridge",
 
-      /*
-       * INFO: Modern JS builds: Next.js, Vite, Webpack, TypeScript, pnpm extraction Can easily spike to 1–1.5GB.
-       * Especially during dependency install.
-       * 512MB is extremely tight.
-       * */
-      // Memory: 512 * 1024 * 1024,
-      // MemorySwap: 512 * 1024 * 1024, // no swap overcommit
-      // PidsLimit: 64,
+      Memory: 2 * 1024 * 1024 * 1024,
+      MemorySwap: 2 * 1024 * 1024 * 1024,
+      PidsLimit: 256,
       NanoCpus: 1_000_000_000,
 
       AutoRemove: true,
@@ -84,10 +78,13 @@ export async function runDockerBuild(job: BuildJob) {
   console.log("Docker container created successfully");
 
   const containerId = container.Id;
-
   const timeout = setTimeout(async () => {
-    console.warn("Build timeout reached. Killing container...");
-    await docker.containerDelete(containerId);
+    console.warn("Build timeout reached. Stopping container...");
+    try {
+      await docker.containerStop(containerId, { timeout: 5 }); // 5 sec grace
+    } catch (e) {
+      console.error("Failed to stop container:", e);
+    }
   }, BUILD_TIMEOUT_MS);
 
   try {
