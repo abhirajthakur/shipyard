@@ -1,26 +1,33 @@
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Install required packages
-RUN apk add --no-cache \
+# Install required system dependencies
+RUN apt-get update && apt-get install -y \
   git \
   bash \
   ca-certificates \
-  tini
+  tini \
+  python3 \
+  make \
+  g++ \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup -S runner && adduser -S runner -G runner
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Set working directory
+# Create non-root user
+RUN useradd -m -s /bin/bash runner
+
 WORKDIR /workspace
 
-# Ensure workspace exists and owned by runner
-RUN mkdir -p /workspace && chown -R runner:runner /workspace
+# Prepare runner home directories
+ENV PNPM_HOME="/home/runner/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-# Drop privileges
+RUN mkdir -p /workspace \
+  && mkdir -p /home/runner/.local/share/pnpm \
+  && chown -R runner:runner /workspace /home/runner
+
 USER runner
 
-# Use tini as PID 1 (prevents zombie processes)
-ENTRYPOINT ["/sbin/tini", "--"]
-
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["sh"]
