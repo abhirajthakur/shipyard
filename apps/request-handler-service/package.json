@@ -1,0 +1,26 @@
+{
+  "name": "@shipyard/request-handler-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "rm -rf dist && tsc",
+    "start": "node dist/server.js"
+  },
+  "devDependencies": {
+    "@shipyard/typescript-config": "workspace:^",
+    "@types/express": "^5.0.6",
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^25.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.999.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mime-types": "^3.0.2",
+    "zod": "^4.0.0"
+  }
+}
