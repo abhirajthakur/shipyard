@@ -21,7 +21,6 @@ const createDeploymentSchema = z.object({
 
 const updateStatusSchema = z.object({
   status: z.enum(DeploymentStatus),
-  artifactUrl: z.url().optional(),
 });
 
 router.post("/", async (req: Request, res: Response) => {
@@ -105,8 +104,8 @@ router.patch("/internal/:id/status", async (req: Request, res: Response) => {
       });
     }
 
-    const { status, artifactUrl } = parsed.data;
-    await updateDeploymentStatus(id, status, artifactUrl);
+    const { status } = parsed.data;
+    await updateDeploymentStatus(id, status);
 
     return res.json({ success: true });
   } catch (error: any) {

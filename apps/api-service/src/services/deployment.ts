@@ -34,7 +34,6 @@ export async function createDeployment(
       repoUrl: payload.repoUrl,
       buildCommand: payload.buildCommand,
       outputDir: payload.outputDir,
-      artifactPrefix: `deployments/${id}/`,
     };
 
     await deploymentQueue.add("build", job, {
@@ -89,14 +88,12 @@ export async function getAllDeployments(): Promise<DeploymentResponse[]> {
 export async function updateDeploymentStatus(
   id: string,
   status: DeploymentStatus,
-  artifactUrl?: string,
 ) {
   try {
     await db
       .update(deployments)
       .set({
         status,
-        artifactUrl: artifactUrl ?? null,
       })
       .where(eq(deployments.id, id));
   } catch (err: any) {
