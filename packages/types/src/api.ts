@@ -13,7 +13,6 @@ export type CreateDeploymentResponse = {
 
 export type UpdateDeploymentStatusRequest = {
   status: DeploymentStatus;
-  artifactUrl?: string;
 };
 
 export type DeploymentResponse = {
@@ -22,7 +21,6 @@ export type DeploymentResponse = {
   buildCommand: string;
   outputDir: string;
   status: DeploymentStatus;
-  artifactUrl?: string | null;
   createdAt: Date;
   updatedAt?: Date | null;
 };

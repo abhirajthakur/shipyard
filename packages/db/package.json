@@ -11,8 +11,10 @@
   },
   "license": "ISC",
   "dependencies": {
+    "@shipyard/types": "workspace:^",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
+    "nanoid": "^5.1.6",
     "pg": "^8.18.0"
   },
   "devDependencies": {
