@@ -15,6 +15,13 @@
       "when": 1772538330665,
       "tag": "0001_swift_marvel_apes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772567562433,
+      "tag": "0002_fantastic_true_believers",
+      "breakpoints": true
     }
   ]
 }
