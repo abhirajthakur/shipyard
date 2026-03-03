@@ -1,5 +1,5 @@
 import { deploymentQueue } from "#app/config/redis.js";
-import { db, deployments, eq } from "@shipyard/db";
+import { and, db, deployments, eq } from "@shipyard/db";
 
 import {
   DeploymentStatus,
@@ -10,12 +10,14 @@ import {
 } from "@shipyard/types";
 
 export async function createDeployment(
+  userId: string,
   payload: CreateDeploymentRequest,
 ): Promise<CreateDeploymentResponse> {
   try {
     const [deployment] = await db
       .insert(deployments)
       .values({
+        userId,
         repoUrl: payload.repoUrl,
         buildCommand: payload.buildCommand,
         outputDir: payload.outputDir,
@@ -38,30 +40,25 @@ export async function createDeployment(
 
     await deploymentQueue.add("build", job, {
       attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 2000,
-      },
+      backoff: { type: "exponential", delay: 2000 },
     });
 
-    return {
-      id,
-      status: DeploymentStatus.QUEUED,
-    };
+    return { id, status: DeploymentStatus.QUEUED };
   } catch (err: any) {
     console.error("Error in createDeployment:", err);
-    throw err; // re-throw so route handler can return proper status
+    throw err;
   }
 }
 
 export async function getDeploymentById(
+  userId: string,
   id: string,
 ): Promise<DeploymentResponse | null> {
   try {
     const result = await db
       .select()
       .from(deployments)
-      .where(eq(deployments.id, id));
+      .where(and(eq(deployments.id, id), eq(deployments.userId, userId)));
 
     if (!result.length) return null;
 
@@ -72,9 +69,15 @@ export async function getDeploymentById(
   }
 }
 
-export async function getAllDeployments(): Promise<DeploymentResponse[]> {
+export async function getAllDeployments(
+  userId: string,
+): Promise<DeploymentResponse[]> {
   try {
-    const result = await db.select().from(deployments);
+    const result = await db
+      .select()
+      .from(deployments)
+      .where(eq(deployments.userId, userId));
+
     return result as DeploymentResponse[];
   } catch (err: any) {
     console.error("Error in getAllDeployments:", err);
@@ -83,19 +86,14 @@ export async function getAllDeployments(): Promise<DeploymentResponse[]> {
 }
 
 /**
- * Update deployment status (called by build-service)
+ * Update deployment status (used by build-service)
  */
 export async function updateDeploymentStatus(
   id: string,
   status: DeploymentStatus,
 ) {
   try {
-    await db
-      .update(deployments)
-      .set({
-        status,
-      })
-      .where(eq(deployments.id, id));
+    await db.update(deployments).set({ status }).where(eq(deployments.id, id));
   } catch (err: any) {
     console.error("Error in updateDeploymentStatus:", err);
     throw err;

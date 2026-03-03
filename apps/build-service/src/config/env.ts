@@ -4,6 +4,7 @@ import { z } from "zod";
 const envSchema = z.object({
   REDIS_URL: z.string().default("redis://localhost:6379"),
   API_URL: z.string().default("http://localhost:8000"),
+  INTERNAL_SECRET: z.string().default("secret"),
 
   SUPABASE_S3_REGION: z.string(),
   SUPABASE_S3_ENDPOINT: z.string(),

@@ -1,3 +1,5 @@
+import { env } from "#app/config/env.js";
+import { authMiddleware } from "#app/middleware/auth.js";
 import {
   createDeployment,
   getAllDeployments,
@@ -23,7 +25,7 @@ const updateStatusSchema = z.object({
   status: z.enum(DeploymentStatus),
 });
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const parsed = createDeploymentSchema.safeParse(req.body);
 
@@ -39,7 +41,7 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error });
     }
 
-    const result = await createDeployment(parsed.data);
+    const result = await createDeployment(req.user!.id, parsed.data);
 
     return res.status(201).json(result);
   } catch (error: any) {
@@ -59,24 +61,22 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const deployments = await getAllDeployments();
+    const deployments = await getAllDeployments(req.user!.id);
     return res.json(deployments);
   } catch (error: any) {
-    if (error instanceof Error) {
-      return res.status(500).json({ error: error.message });
-    }
     console.error("Get deployments error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Internal Server Error",
+    });
   }
 });
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-
-    const deployment = await getDeploymentById(id);
+    const deployment = await getDeploymentById(req.user!.id, id);
 
     if (!deployment) {
       return res.status(404).json({ error: "Deployment not found" });
@@ -84,16 +84,23 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     return res.json(deployment);
   } catch (error: any) {
-    if (error instanceof Error) {
-      return res.status(500).json({ error: error.message });
-    }
     console.error("Get deployment error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Internal Server Error",
+    });
   }
 });
 
+/**
+ * Internal Deployment Status Update
+ */
 router.patch("/internal/:id/status", async (req: Request, res: Response) => {
   try {
+    const internalSecret = req.headers["x-internal-secret"];
+    if (internalSecret !== env.INTERNAL_SECRET) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const id = req.params.id as string;
     const parsed = updateStatusSchema.safeParse(req.body);
 
@@ -104,24 +111,14 @@ router.patch("/internal/:id/status", async (req: Request, res: Response) => {
       });
     }
 
-    const { status } = parsed.data;
-    await updateDeploymentStatus(id, status);
+    await updateDeploymentStatus(id, parsed.data.status);
 
     return res.json({ success: true });
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: "Validation failed",
-        details: z.treeifyError(error),
-      });
-    }
-
-    if (error instanceof Error) {
-      return res.status(500).json({ error: error.message });
-    }
-
     console.error("Update status error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Internal Server Error",
+    });
   }
 });
 

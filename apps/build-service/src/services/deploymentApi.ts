@@ -15,10 +15,9 @@ export async function updateStatus(
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "x-internal-secret": env.INTERNAL_SECRET,
         },
-        body: JSON.stringify({
-          status,
-        }),
+        body: JSON.stringify({ status }),
         signal: controller.signal,
       },
     );
