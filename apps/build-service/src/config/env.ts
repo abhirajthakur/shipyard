@@ -9,8 +9,6 @@ const envSchema = z.object({
   SUPABASE_S3_ENDPOINT: z.string(),
   SUPABASE_S3_ACCESS_KEY_ID: z.string(),
   SUPABASE_S3_SECRET_ACCESS_KEY: z.string(),
-
-  PUBLIC_BASE_URL: z.url(),
 });
 
 const parsed = envSchema.safeParse(process.env);

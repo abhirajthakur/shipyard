@@ -18,9 +18,9 @@ export const worker = new Worker<BuildJob>(
       await updateStatus(deploymentId, DeploymentStatus.BUILDING);
 
       artifactPath = await runDockerBuild(job.data);
-      const publicUrl = await uploadFolder(artifactPath);
+      await uploadFolder(artifactPath);
 
-      await updateStatus(deploymentId, DeploymentStatus.SUCCESS, publicUrl);
+      await updateStatus(deploymentId, DeploymentStatus.SUCCESS);
 
       console.log("Deployment success:", deploymentId);
     } catch (error) {

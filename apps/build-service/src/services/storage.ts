@@ -1,10 +1,9 @@
-import { env } from "#app/config/env.js";
 import { bucketName, s3Client } from "#app/config/s3Client.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import mime from "mime-types";
-import path from "path";
 import pLimit from "p-limit";
+import path from "path";
 
 const CONCURRENCY_LIMIT = 10;
 
@@ -71,6 +70,4 @@ export async function uploadFolder(folderPath: string) {
   );
 
   console.log("Folder upload complete");
-
-  return `${env.PUBLIC_BASE_URL}/${workspaceId}/index.html`;
 }

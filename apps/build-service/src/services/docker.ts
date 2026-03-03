@@ -1,5 +1,4 @@
 import { DockerClient } from "@docker/node-sdk";
-import { createHash } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { Writable } from "stream";
@@ -12,18 +11,12 @@ const BUILD_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const docker = await DockerClient.fromDockerConfig();
 
 export async function runDockerBuild(job: BuildJob) {
-  const workspaceId = createHash("sha256")
-    .update(`${job.deploymentId}-${Date.now()}`)
-    .digest("hex")
-    .slice(0, 24);
-
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
   // Go up from currenr directory -> project root (build-service)
   const projectRoot = path.resolve(__dirname, "../../");
-
-  const workspaceRoot = path.join(projectRoot, "outputs", workspaceId);
+  const workspaceRoot = path.join(projectRoot, "outputs", job.deploymentId);
 
   // Create host workspace folder
   await fs.mkdir(workspaceRoot, { recursive: true });
@@ -48,8 +41,6 @@ export async function runDockerBuild(job: BuildJob) {
   # Copy only the final build output to mounted volume
   echo ${job.outputDir}
   cp -r ${job.outputDir}/* /workspace/
-
-  echo pwd
 
   rm -rf /workspace/repo 
 `;

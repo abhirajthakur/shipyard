@@ -4,7 +4,6 @@ import { DeploymentStatus } from "@shipyard/types";
 export async function updateStatus(
   id: string,
   status: DeploymentStatus,
-  artifactUrl?: string,
 ): Promise<void> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10 * 1000); // 10s timeout
@@ -19,7 +18,6 @@ export async function updateStatus(
         },
         body: JSON.stringify({
           status,
-          ...(artifactUrl ? { artifactUrl } : {}),
         }),
         signal: controller.signal,
       },
