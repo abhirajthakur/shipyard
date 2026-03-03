@@ -41,11 +41,13 @@ app.get("/{*splat}", async (req, res) => {
       "name" in err &&
       err.name === "NoSuchKey"
     ) {
-      return res.status(404).send("Not Found");
+      return res.status(404).send({ error: "Resource not found" });
     }
 
     console.error("S3 error:", err);
-    return res.status(500).send("Internal Server Error");
+    return res.status(500).send({
+      error: "Failed to fetch resource from S3",
+    });
   }
 });
 
