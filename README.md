@@ -1,135 +1,142 @@
-# Turborepo starter
+# Shipyard
 
-This Turborepo starter is maintained by the Turborepo core team.
+A deployment platform that builds and serves static sites from GitHub repositories. Push a repo URL, Shipyard clones it, runs the build inside a sandboxed Docker container, uploads the output to S3, and serves it on a unique subdomain.
 
-## Using this example
+## Architecture
 
-Run the following command:
+```
+┌──────────┐       ┌──────────────┐       ┌───────────────┐       ┌────┐
+│  Client  │──────▶│  API Service │──────▶│ Build Service  │──────▶│ S3 │
+└──────────┘       └──────────────┘       └───────────────┘       └──┬─┘
+                         │                       ▲                   │
+                         │        BullMQ         │                   │
+                         └───────(Redis)─────────┘                   │
+                                                          ┌──────────▼──────────┐
+                                                          │ Request Handler Svc │
+                                                          └─────────────────────┘
+```
+
+- **API Service** — Express REST API handling auth (JWT + cookies) and deployment CRUD. Enqueues build jobs via BullMQ.
+- **Build Service** — BullMQ worker that clones the repo, runs the build inside a Docker container with resource limits, and uploads the output to S3 (Supabase Storage).
+- **Request Handler Service** — Reverse proxy that resolves a subdomain to a deployment ID and streams the corresponding static assets from S3.
+- **Web** *(coming soon)* — Frontend app.
+
+## Tech Stack
+
+- **Monorepo**: Turborepo + pnpm workspaces
+- **Language**: TypeScript (all packages)
+- **API**: Express 5, Zod, JWT, bcrypt
+- **Queue**: BullMQ (Redis)
+- **Database**: PostgreSQL via Drizzle ORM
+- **Storage**: S3-compatible (Supabase Storage)
+- **Builds**: Docker (sandboxed containers with resource limits)
+
+## Project Structure
+
+```
+apps/
+  api-service/             # REST API (auth, deployments)
+  build-service/           # BullMQ worker (clone → build → upload)
+  request-handler-service/ # Serves deployed sites from S3
+  web/                     # Frontend (coming soon)
+docker/
+  build-runner/            # Dockerfile for the sandboxed build container
+packages/
+  db/                      # Drizzle schema, migrations, client
+  types/                   # Shared TypeScript types
+  eslint-config/           # Shared ESLint config
+  typescript-config/       # Shared tsconfig bases
+```
+
+## Prerequisites
+
+- Node.js ≥ 18
+- pnpm 9
+- Docker
+- PostgreSQL
+- Redis
+- S3-compatible storage (e.g. Supabase Storage)
+
+## Getting Started
+
+### 1. Install dependencies
 
 ```sh
-npx create-turbo@latest
+pnpm install
 ```
 
-## What's inside?
+### 2. Configure environment variables
 
-This Turborepo includes the following packages/apps:
+Each service has its own `.env` file. Copy the examples and fill in the values:
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+**`apps/api-service/.env`**
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+PORT=8000
+NODE_ENV=development
+REDIS_URL=redis://localhost:6379
+FRONTEND_URL=http://localhost:3000
+JWT_SECRET=<your-jwt-secret>
+INTERNAL_SECRET=<your-internal-secret>
+DATABASE_URL=<your-postgres-url>
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+**`apps/build-service/.env`**
 
 ```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+REDIS_URL=redis://localhost:6379
+API_URL=http://localhost:8000
+INTERNAL_SECRET=<your-internal-secret>
+SUPABASE_S3_REGION=<region>
+SUPABASE_S3_ENDPOINT=<endpoint>
+SUPABASE_S3_ACCESS_KEY_ID=<access-key>
+SUPABASE_S3_SECRET_ACCESS_KEY=<secret-key>
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
+**`apps/request-handler-service/.env`**
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+PORT=8001
+SUPABASE_S3_REGION=<region>
+SUPABASE_S3_ENDPOINT=<endpoint>
+SUPABASE_S3_ACCESS_KEY_ID=<access-key>
+SUPABASE_S3_SECRET_ACCESS_KEY=<secret-key>
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### 3. Build the Docker build-runner image
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```sh
+docker build -t shipyard-build-runner:1.0 docker/build-runner
 ```
 
-### Remote Caching
+### 4. Run database migrations
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```sh
+pnpm db:generate
+pnpm db:migrate
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### 5. Start development
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+```sh
+pnpm dev
 ```
 
-## Useful Links
+Or run a specific service:
 
-Learn more about the power of Turborepo:
+```sh
+pnpm dev --filter=@shipyard/api-service
+```
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## Scripts
+
+| Command | Description |
+|---|---|
+| `pnpm dev` | Start all services in dev mode |
+| `pnpm build` | Build all packages and services |
+| `pnpm start` | Start all built services |
+| `pnpm lint` | Lint all packages |
+| `pnpm check-types` | Type-check all packages |
+| `pnpm db:generate` | Generate Drizzle migrations |
+| `pnpm db:migrate` | Run Drizzle migrations |
+| `pnpm format` | Format code with Prettier |
