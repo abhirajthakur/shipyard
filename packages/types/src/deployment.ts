@@ -13,9 +13,8 @@ export type Deployment = {
   buildCommand: string;
   outputDir: string;
   status: DeploymentStatus;
-  artifactUrl?: string | null;
-  createdAt: Date;
-  updatedAt?: Date | null;
+  createdAt: string;
+  updatedAt?: string | null;
 };
 
 export type CreateDeploymentRequest = {
@@ -31,14 +30,4 @@ export type CreateDeploymentResponse = {
 
 export type UpdateDeploymentStatusRequest = {
   status: DeploymentStatus;
-};
-
-export type DeploymentResponse = {
-  id: string;
-  repoUrl: string;
-  buildCommand: string;
-  outputDir: string;
-  status: DeploymentStatus;
-  createdAt: Date;
-  updatedAt?: Date | null;
 };

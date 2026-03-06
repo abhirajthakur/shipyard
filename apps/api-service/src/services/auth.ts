@@ -1,15 +1,13 @@
 import { env } from "#app/config/env.js";
-import { db, eq, users } from "@shipyard/db";
+import { db, users } from "@shipyard/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { getUserByEmail } from "./user.js";
 
 const jwtSecret = env.JWT_SECRET!;
 
 export async function signupUser(email: string, password: string) {
-  const existing = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
-
+  const existing = await getUserByEmail(email);
   if (existing) {
     throw new Error("Email already registered");
   }
@@ -32,10 +30,7 @@ export async function signupUser(email: string, password: string) {
 }
 
 export async function signinUser(email: string, password: string) {
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
-
+  const user = await getUserByEmail(email);
   if (!user) {
     throw new Error("Invalid credentials");
   }

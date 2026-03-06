@@ -3,16 +3,11 @@ export type SignupRequest = {
   password: string;
 };
 
-export type SignupResponse = {
-  id: string;
-  email: string;
-};
-
-export type LoginRequest = {
+export type SigninRequest = {
   email: string;
   password: string;
 };
 
-export type LoginResponse = {
+export type SigninResponse = {
   token: string;
 };

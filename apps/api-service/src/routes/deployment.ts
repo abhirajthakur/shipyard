@@ -41,7 +41,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error });
     }
 
-    const result = await createDeployment(req.user!.id, parsed.data);
+    const result = await createDeployment(req.userId!, parsed.data);
 
     return res.status(201).json(result);
   } catch (error: any) {
@@ -63,7 +63,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const deployments = await getAllDeployments(req.user!.id);
+    const deployments = await getAllDeployments(req.userId!);
     return res.json(deployments);
   } catch (error: any) {
     console.error("Get deployments error:", error);
@@ -76,7 +76,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const deployment = await getDeploymentById(req.user!.id, id);
+    const deployment = await getDeploymentById(req.userId!, id);
 
     if (!deployment) {
       return res.status(404).json({ error: "Deployment not found" });

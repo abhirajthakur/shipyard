@@ -6,8 +6,16 @@ import {
   type BuildJob,
   type CreateDeploymentRequest,
   type CreateDeploymentResponse,
-  type DeploymentResponse,
+  type Deployment,
 } from "@shipyard/types";
+
+function serializeDeployment(deployment: any): Deployment {
+  return {
+    ...deployment,
+    createdAt: deployment.createdAt.toISOString(),
+    updatedAt: deployment.updatedAt.toISOString(),
+  };
+}
 
 export async function createDeployment(
   userId: string,
@@ -53,7 +61,7 @@ export async function createDeployment(
 export async function getDeploymentById(
   userId: string,
   id: string,
-): Promise<DeploymentResponse | null> {
+): Promise<Deployment | null> {
   try {
     const result = await db
       .select()
@@ -62,23 +70,21 @@ export async function getDeploymentById(
 
     if (!result.length) return null;
 
-    return result[0] as DeploymentResponse;
+    return serializeDeployment(result[0]);
   } catch (err: any) {
     console.error("Error in getDeploymentById:", err);
     throw err;
   }
 }
 
-export async function getAllDeployments(
-  userId: string,
-): Promise<DeploymentResponse[]> {
+export async function getAllDeployments(userId: string): Promise<Deployment[]> {
   try {
     const result = await db
       .select()
       .from(deployments)
       .where(eq(deployments.userId, userId));
 
-    return result as DeploymentResponse[];
+    return result.map((deployment) => serializeDeployment(deployment));
   } catch (err: any) {
     console.error("Error in getAllDeployments:", err);
     throw err;
