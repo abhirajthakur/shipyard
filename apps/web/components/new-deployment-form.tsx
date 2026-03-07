@@ -18,7 +18,6 @@ export function NewDeploymentForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.currentTarget;
-    console.log({ name, value });
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -33,7 +32,7 @@ export function NewDeploymentForm() {
     setIsLoading(true);
 
     try {
-      await createDeployment({
+      const res = await createDeployment({
         repoUrl: formData.repoUrl,
         buildCommand: formData.buildCommand,
         outputDir: formData.outputDir,
@@ -47,7 +46,7 @@ export function NewDeploymentForm() {
         outputDir: "dist",
       });
 
-      router.push("/dashboard");
+      router.push(`/deployments/${res.id}`);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to initiate deployment");

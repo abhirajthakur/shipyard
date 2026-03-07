@@ -36,15 +36,34 @@ export default function SignupPage() {
   ) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      const nextField = document.getElementById(
-        nextFieldId,
-      ) as HTMLInputElement;
-      if (nextField) {
-        nextField.focus();
+
+      const fieldName = (e.target as HTMLInputElement).name;
+      let valid = true;
+
+      if (fieldName === "email") {
+        if (!formData.email.trim() || !formData.email.includes("@")) {
+          setErrors((prev) => ({ ...prev, email: "Invalid email address" }));
+
+          valid = false;
+        }
+      }
+
+      if (fieldName === "password") {
+        if (!formData.password) {
+          setErrors((prev) => ({ ...prev, password: "Password is required" }));
+          valid = false;
+        }
+      }
+
+      if (valid) {
+        const nextField = document.getElementById(
+          nextFieldId,
+        ) as HTMLInputElement;
+
+        if (nextField) nextField.focus();
       }
     }
   };
-
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 

@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { getAllDeployments } from "@/lib/api";
+import getDeploymentUrl from "@/lib/deploymentUrl";
 import { formatDate } from "@/lib/utils";
 import { Deployment } from "@shipyard/types";
 import { ExternalLink, Plus } from "lucide-react";
@@ -20,7 +21,13 @@ function DashboardContent() {
   useEffect(() => {
     setLoading(true);
     getAllDeployments()
-      .then((data) => setDeployments(data))
+      .then((data) => {
+        const sorted = data.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        setDeployments(sorted);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -103,12 +110,15 @@ function DashboardContent() {
                       className="px-6 py-5 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
+                      <a
+                        href={getDeploymentUrl(deployment.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100 text-accent hover:bg-orange-200 transition-all duration-200"
-                        title="Visit deployed site"
+                        title="Visit deployment"
                       >
                         <ExternalLink className="w-4 h-4" />
-                      </button>
+                      </a>
                     </td>
                   </tr>
                 ))}

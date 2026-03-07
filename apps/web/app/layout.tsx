@@ -34,7 +34,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           {children}
-          <Toaster />
+          <Toaster theme="light" />
         </AuthProvider>
       </body>
     </html>
