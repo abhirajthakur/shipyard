@@ -1,3 +1,4 @@
+import { redis } from "#app/config/redis.js";
 import { DockerClient } from "@docker/node-sdk";
 import fs from "fs/promises";
 import path from "path";
@@ -49,6 +50,7 @@ export async function runDockerBuild(job: BuildJob) {
     Image: "shipyard-build-runner:1.0",
     Cmd: ["sh", "-c", buildScript],
     WorkingDir: "/workspace",
+    User: "runner",
     HostConfig: {
       Binds: [`${workspaceRoot}:/workspace:rw`],
 
@@ -81,7 +83,7 @@ export async function runDockerBuild(job: BuildJob) {
   try {
     await docker.containerStart(containerId);
 
-    await streamContainerLogs(containerId);
+    await streamContainerLogs(containerId, job.deploymentId);
 
     const res = await docker.containerWait(containerId);
 
@@ -100,23 +102,50 @@ export async function runDockerBuild(job: BuildJob) {
   }
 }
 
-export async function streamContainerLogs(containerId: string) {
+export async function streamContainerLogs(
+  containerId: string,
+  deploymentId: string,
+) {
+  const key = `logs:${deploymentId}`;
+
   const stdoutStream = new Writable({
     write(chunk, _encoding, callback) {
-      process.stdout.write(chunk.toString());
+      const rawLogs: string = chunk.toString();
+      const splitLogs = rawLogs.split("\n");
+      const logs = splitLogs.filter((line) => line.trim() !== "");
+
+      for (const log of logs) {
+        process.stdout.write(log + "\n");
+
+        redis.rpush(key, log);
+        redis.ltrim(key, -1000, -1);
+        redis.publish(key, log);
+      }
+
       callback();
     },
   });
 
   const stderrStream = new Writable({
     write(chunk, _encoding, callback) {
-      process.stderr.write(chunk.toString());
+      const rawLogs: string = chunk.toString();
+      const splitLogs = rawLogs.split("\n");
+      const logs = splitLogs.filter((line) => line.trim() !== "");
+
+      for (const log of logs) {
+        process.stdout.write(log + "\n");
+
+        redis.rpush(key, log);
+        redis.ltrim(key, -1000, -1);
+        redis.publish(key, log);
+      }
+
       callback();
     },
   });
 
   await docker.containerLogs(containerId, stdoutStream, stderrStream, {
-    follow: true, // live streaming
+    follow: true,
     stdout: true,
     stderr: true,
     timestamps: true,

@@ -3,7 +3,8 @@
 import { ProtectedRoute } from "@/components/protected-route";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { getDeploymentById } from "@/lib/api";
+import { getDeploymentById, streamDeploymentLogs } from "@/lib/api";
+import getDeploymentUrl from "@/lib/deploymentUrl";
 import { cn, formatDate } from "@/lib/utils";
 import { Deployment, DeploymentStatus } from "@shipyard/types";
 import { AlertCircle, ArrowLeft, CheckCircle, Eye } from "lucide-react";
@@ -14,9 +15,10 @@ import { useEffect, useState } from "react";
 function DeploymentDetailsContent() {
   const params = useParams<{ id: string }>();
 
+  const [error, setError] = useState<string | null>(null);
   const [deployment, setDeployment] = useState<Deployment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
 
   useEffect(() => {
     if (!params.id) return;
@@ -26,6 +28,57 @@ function DeploymentDetailsContent() {
       .then((data) => setDeployment(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!params.id || !deployment) return;
+
+    if (
+      deployment.status !== DeploymentStatus.BUILDING &&
+      deployment.status !== DeploymentStatus.QUEUED
+    ) {
+      return;
+    }
+
+    const closeStream = streamDeploymentLogs(params.id, {
+      onLog: (log: string) => {
+        setLogs((prev) => [...prev, log]);
+      },
+
+      onComplete: () => {
+        setDeployment((prev) =>
+          prev ? { ...prev, status: DeploymentStatus.SUCCESS } : prev,
+        );
+      },
+
+      onFailed: () => {
+        setDeployment((prev) =>
+          prev ? { ...prev, status: DeploymentStatus.FAILED } : prev,
+        );
+      },
+
+      onError: (err: any) => {
+        console.error("Log stream error:", err);
+      },
+    });
+
+    return closeStream;
+  }, [params.id, deployment?.status]);
+
+  useEffect(() => {
+    const el = document.getElementById("logs-container");
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+  }, [logs]);
+
+  useEffect(() => {
+    setLogs([]);
   }, [params.id]);
 
   if (loading) return <p>Loading...</p>;
@@ -94,13 +147,22 @@ function DeploymentDetailsContent() {
               Created {formatDate(deployment.createdAt)}
             </p>
           </div>
-          <Button
-            size="lg"
-            className="gap-2 bg-primary hover:bg-primary/90 text-white"
-          >
-            <Eye className="w-4 h-4" />
-            Visit Deployment
-          </Button>
+          {deployment.status === DeploymentStatus.SUCCESS && (
+            <Button
+              size="lg"
+              className="gap-2 bg-primary hover:bg-primary/90 text-white"
+              asChild
+            >
+              <a
+                href={getDeploymentUrl(deployment.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Eye className="w-4 h-4" />
+                Visit Deployment
+              </a>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -135,48 +197,18 @@ function DeploymentDetailsContent() {
         {/* Build Logs - Only shown for building/queued deployments */}
         {(deployment.status === DeploymentStatus.BUILDING ||
           deployment.status === DeploymentStatus.QUEUED) && (
-          <div className="border-2 border-slate-300 rounded-2xl bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+          <div className="border-2 border-slate-300 rounded-2xl bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
               <h2 className="text-lg font-bold text-foreground">Build Logs</h2>
-              <span className="text-xs font-medium text-yellow-700 flex items-center gap-2 bg-yellow-100 px-3 py-1.5 rounded-full">
-                <span className="w-2 h-2 bg-yellow-600 rounded-full animate-pulse"></span>
-                Auto-refreshing
-              </span>
             </div>
 
-            <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto max-h-96 overflow-y-auto space-y-1">
-              <div>{"[00:00] Cloning repository..."}</div>
-              <div>{"[00:02] Installing dependencies..."}</div>
-              <div>{"[00:15] Running build command: npm run build"}</div>
-              <div className="text-blue-400">
-                {"[00:18] > project@1.0.0 build"}
-              </div>
-              <div className="text-blue-400">{"[00:18] > vite build"}</div>
-              <div>{"[00:20] vite v5.4.0 building for production..."}</div>
-              <div className="text-green-300 font-bold">
-                {"[00:22] ✓ 143 modules transformed."}
-              </div>
-              <div>
-                {
-                  "[00:23] dist/index.html                 0.46 kB | gzip:  0.30 kB"
-                }
-              </div>
-              <div>
-                {
-                  "[00:23] dist/assets/index.css         4.12 kB | gzip:  1.38 kB"
-                }
-              </div>
-              <div>
-                {
-                  "[00:23] dist/assets/index.js        187.23 kB | gzip: 60.12 kB"
-                }
-              </div>
-              <div className="text-green-300 font-bold">
-                {"[00:24] ✓ built in 4.2s"}
-              </div>
-              <div className="text-purple-300">
-                {"[00:25] Uploading to CDN..."}
-              </div>
+            <div
+              id="logs-container"
+              className="bg-slate-900 rounded-xl p-3 font-mono text-sm text-green-400 overflow-x-auto overflow-y-auto h-96 space-y-1"
+            >
+              {logs.map((log, i) => (
+                <p key={i}>{log}</p>
+              ))}
             </div>
           </div>
         )}

@@ -23,8 +23,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const data = await res.json();
 
-  console.log({ data });
-
   if (!res.ok) {
     throw new Error(data.error || "Request failed");
   }
@@ -73,4 +71,43 @@ export async function getDeploymentById(
   id: string,
 ): Promise<Deployment | null> {
   return request(`/deployments/${id}`);
+}
+
+export function streamDeploymentLogs(
+  deploymentId: string,
+  callbacks: {
+    onLog: (log: string) => void;
+    onComplete?: () => void;
+    onFailed?: () => void;
+    onError?: (err: any) => void;
+  },
+) {
+  const eventSource = new EventSource(
+    `${API_BASE}/deployments/${deploymentId}/logs`,
+    {
+      withCredentials: true,
+    },
+  );
+
+  eventSource.onmessage = (event) => {
+    const data = event.data;
+
+    if (data === "__BUILD_COMPLETE__") {
+      callbacks.onComplete?.();
+      eventSource.close();
+    } else if (data === "__BUILD_FAILED__") {
+      callbacks.onFailed?.();
+      eventSource.close();
+    } else {
+      // **Make sure to call onLog for every normal log line**
+      callbacks.onLog(data);
+    }
+  };
+
+  eventSource.onerror = (err) => {
+    callbacks.onError?.(err);
+    eventSource.close();
+  };
+
+  return () => eventSource.close();
 }

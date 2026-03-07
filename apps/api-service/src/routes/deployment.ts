@@ -12,6 +12,7 @@ import { Router } from "express";
 import z from "zod";
 
 import type { Request, Response } from "express";
+import { redis } from "#app/config/redis.js";
 
 const router: Router = Router();
 
@@ -89,6 +90,40 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Internal Server Error",
     });
   }
+});
+
+router.get("/:id/logs", authMiddleware, async (req: Request, res: Response) => {
+  const deploymentId = req.params.id;
+
+  res.setHeader("Access-Control-Allow-Origin", env.FRONTEND_URL);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const key = `logs:${deploymentId}`;
+
+  const logs = await redis.lrange(key, 0, -1);
+  for (const log of logs) {
+    res.write(`data: ${log}\n\n`);
+  }
+
+  const subscriber = redis.duplicate();
+  await subscriber.subscribe(`logs:${deploymentId}`);
+
+  subscriber.on("message", (_channel, message) => {
+    res.write(`data: ${message}\n\n`);
+  });
+
+  const keepAliveInterval = setInterval(() => {
+    res.write(": keep-alive\n\n");
+  }, 15000);
+
+  req.on("close", () => {
+    clearInterval(keepAliveInterval);
+    subscriber.disconnect();
+  });
 });
 
 /**

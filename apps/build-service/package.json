@@ -25,6 +25,7 @@
     "@shipyard/types": "workspace:^",
     "bullmq": "^5.69.3",
     "dotenv": "^17.3.1",
+    "ioredis": "^5.10.0",
     "mime-types": "^3.0.2",
     "p-limit": "^7.3.0",
     "zod": "^4.0.0"

@@ -1,4 +1,4 @@
-import { redisConnection } from "#app/config/redis.js";
+import { redis, redisConnection } from "#app/config/redis.js";
 import { updateStatus } from "#app/services/deploymentApi.js";
 import { runDockerBuild } from "#app/services/docker.js";
 import { uploadFolder } from "#app/services/storage.js";
@@ -22,11 +22,15 @@ export const worker = new Worker<BuildJob>(
 
       await updateStatus(deploymentId, DeploymentStatus.SUCCESS);
 
+      redis.publish(`logs:${deploymentId}`, "__BUILD_COMPLETE__");
+
       console.log("Deployment success:", deploymentId);
     } catch (error) {
       console.error("Worker error:", error);
 
       await updateStatus(deploymentId, DeploymentStatus.FAILED);
+
+      redis.publish(`logs:${deploymentId}`, "__BUILD_FAILED__");
 
       throw error;
     } finally {
