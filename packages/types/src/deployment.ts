@@ -14,7 +14,7 @@ export type Deployment = {
   outputDir: string;
   status: DeploymentStatus;
   createdAt: string;
-  updatedAt?: string | null;
+  updatedAt: string;
 };
 
 export type CreateDeploymentRequest = {
