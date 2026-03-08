@@ -2,6 +2,10 @@
 
 A deployment platform that builds and serves static sites from GitHub repositories. Push a repo URL, Shipyard clones it, runs the build inside a sandboxed Docker container, uploads the output to S3, and serves it on a unique subdomain.
 
+## Demo
+
+https://github.com/user-attachments/assets/5b20001c-f6ad-4d80-a62c-4e4a69d7a80a
+
 ## Architecture
 
 ```
