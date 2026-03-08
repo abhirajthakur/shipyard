@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shipyard - Deployment Platform",
+  title: "Shipyard - Static Site Deployment Platform",
   description: "Manage and deploy your applications with Shipyard",
 };
 

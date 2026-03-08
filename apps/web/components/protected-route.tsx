@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background">
         <div className="text-foreground">Loading...</div>
       </div>
     );

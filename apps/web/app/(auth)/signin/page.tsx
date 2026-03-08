@@ -95,10 +95,9 @@ export default function SigninPage() {
         description: "Redirecting to dashboard...",
       });
       router.push("/dashboard");
-    } catch (error) {
+    } catch (err) {
       toast.error("Error", {
-        description:
-          error instanceof Error ? error.message : "Failed to sign in",
+        description: err instanceof Error ? err.message : "Failed to sign in",
       });
     } finally {
       setIsLoading(false);
@@ -106,9 +105,8 @@ export default function SigninPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-background text-foreground flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
           <p className="text-muted-foreground">
@@ -144,14 +142,9 @@ export default function SigninPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="password" className="block text-sm font-medium">
-                Password
-              </label>
-              <a href="#" className="text-sm text-primary hover:underline">
-                Forgot password?
-              </a>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium">
+              Password
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
               <input

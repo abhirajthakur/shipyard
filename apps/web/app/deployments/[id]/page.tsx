@@ -87,7 +87,7 @@ function DeploymentDetailsContent() {
 
   if (!deployment) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-[calc(100vh-4rem)] bg-background">
         <div className="px-8 py-8">
           <Link
             href="/dashboard"
@@ -120,7 +120,7 @@ function DeploymentDetailsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div
         className={cn(
           getHeaderGradient(deployment.status),
@@ -166,7 +166,6 @@ function DeploymentDetailsContent() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="px-8 py-8">
         {/* Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

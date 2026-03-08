@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, signin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -92,14 +92,16 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       await signup(formData.email, formData.password);
+      await signin(formData.email, formData.password);
+
       toast.success("Success!", {
         description: "Account created. Redirecting to dashboard...",
       });
       router.push("/dashboard");
-    } catch (error) {
+    } catch (err) {
       toast.error("Error", {
         description:
-          error instanceof Error ? error.message : "Failed to create account",
+          err instanceof Error ? err.message : "Failed to create account",
       });
     } finally {
       setIsLoading(false);
@@ -107,7 +109,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-background text-foreground flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Create your account</h1>
@@ -159,7 +161,11 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
-                onKeyDown={(e) => handleKeyPress(e, "confirmPassword")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSubmit(e as any);
+                  }
+                }}
                 disabled={isLoading}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               />
